@@ -12,6 +12,16 @@
         <select data-line-chart-command="select_box_change"
                 name="meter" id="meter" class="form-control example">
 
+          {% if ironic_meters %}
+            <optgroup label='{% trans "Baremetal (Ironic)" %}'>
+              {% for meter in ironic_meters %}
+                <option title="{{ meter.description }}"  value="{{ meter.name }}" data-unit="{{ meter.unit }}">
+                  {{ meter.label }}
+                </option>
+              {% endfor %}
+            </optgroup>
+          {% endif %}
+
           {% if nova_meters %}
             <optgroup label='{% trans "Compute (Nova)" %}'>
               {% for meter in nova_meters %}

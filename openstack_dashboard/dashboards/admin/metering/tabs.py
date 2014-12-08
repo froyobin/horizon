@@ -48,6 +48,7 @@ class GlobalStatsTab(tabs.Tab):
             'cinder_meters': meters.list_cinder(),
             'swift_meters': meters.list_swift(),
             'kwapi_meters': meters.list_kwapi(),
+            'ironic_meters': meters.list_ironic(),
         }
 
         return context

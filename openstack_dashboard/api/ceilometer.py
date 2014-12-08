@@ -745,12 +745,13 @@ class Meters(object):
         self._cinder_meters_info = self._get_cinder_meters_info()
         self._swift_meters_info = self._get_swift_meters_info()
         self._kwapi_meters_info = self._get_kwapi_meters_info()
+        self._ironic_meters_info = self._get_ironic_meters_info()
 
         # Storing the meters info of all services together.
         all_services_meters = (self._nova_meters_info,
             self._neutron_meters_info, self._glance_meters_info,
             self._cinder_meters_info, self._swift_meters_info,
-            self._kwapi_meters_info)
+            self._kwapi_meters_info, self._ironic_meters_info,)
         self._all_meters_info = {}
         for service_meters in all_services_meters:
             self._all_meters_info.update(dict([(meter_name, meter_info)
@@ -811,6 +812,17 @@ class Meters(object):
 
         return self._list(only_meters=self._cinder_meters_info.keys(),
             except_meters=except_meters)
+
+    def list_ironic(self, except_meters=None):
+        """Returns a list of meters tied to ironic
+
+        :Parameters:
+          - `except_meters`: The list of meter names we don't want to show
+        """
+
+        return self._list(only_meters=self._ironic_meters_info.keys(),
+            except_meters=except_meters)
+
 
     def list_swift(self, except_meters=None):
         """Returns a list of meters tied to swift
@@ -1127,6 +1139,40 @@ class Meters(object):
                 'description': _("Size of volume"),
             }),
         ])
+
+    def _get_ironic_meters_info(self):
+        """Returns additional info for each meter
+
+        That will be used for augmenting the Ceilometer meter
+        """
+
+        # TODO(lsmola) Unless the Ceilometer will provide the information
+        # below, I need to define it as a static here. I will be joining this
+        # to info that I am able to obtain from Ceilometer meters, hopefully
+        # some day it will be supported all.
+        return datastructures.SortedDict([
+            ('hardware.ipmi.current', {
+                'label': '',
+                'description': _("Current of hardwares"),
+            }),
+            ('hardware.ipmi.fan', {
+                'label': '',
+                'description': _("Fan speed of hardwares"),
+            }),
+            ('hardware.ipmi.sel', {
+                'label': '',
+                'description': _("sel event"),
+            }),
+            ('hardware.ipmi.temperature', {
+                'label': '',
+                'description': _("Temperature of sensors"),
+            }),
+            ('hardware.ipmi.voltage', {
+                'label': '',
+                'description': _("voltage of sensors"),
+            }),
+        ])
+
 
     def _get_swift_meters_info(self):
         """Returns additional info for each meter
