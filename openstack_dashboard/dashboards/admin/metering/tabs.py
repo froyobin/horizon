@@ -18,6 +18,7 @@ from horizon import tabs
 
 from openstack_dashboard import api
 from openstack_dashboard.api import ceilometer
+from openstack_dashboard.api import ironic
 
 
 class GlobalStatsTab(tabs.Tab):
@@ -63,8 +64,27 @@ class DailyReportTab(tabs.Tab):
         context = template.RequestContext(request)
         return context
 
+class hardwareevent(tabs.Tab):
+    name = _("hardware Report")
+    slug = "heardware_report"
+    template_name = ("admin/metering/hardware_event.html")
+
+    def get_context_data(self, request):
+        meters = ceilometer.Meters(request)
+        name=ironic.get_node_names(request)
+        if not meters._ceilometer_meter_list:
+            msg = _("There are no meters defined yet.")
+
+
+
+        context = {
+            'nova_meters':"OK" ,
+            'neutron_meters': "FALSE",
+        }
+
+        return context
 
 class CeilometerOverviewTabs(tabs.TabGroup):
     slug = "ceilometer_overview"
-    tabs = (DailyReportTab, GlobalStatsTab, )
+    tabs = (DailyReportTab, GlobalStatsTab, hardwareevent,)
     sticky = True

@@ -1,0 +1,152 @@
+{% load i18n %}
+<div id="ceilometer-report">
+  <form class="form-horizontal" action="{% url 'horizon:admin:metering:report' %}" method="POST">
+      {% csrf_token %}
+    <div class="form-group">
+      <label for="report_date_options" class="control-label col-sm-2">{% trans "Machine ID:" %}</label>
+      <div class="col-sm-2">
+        <select data-line-chart-command="select_box_change"
+                id="machine_id_options" name="date_options" class="form-control">
+{#          <option value="1">{{ nova_meters }}</option>#}
+{#          <option value="7" selected="selected">{% trans "Last week" %}</option>#}
+{#          <option value="{% now 'j' %}">{% trans "Month to date" %}</option>#}
+{#          <option value="15">{% trans "Last 15 days" %}</option>#}
+{#          <option value="30">{% trans "Last 30 days" %}</option>#}
+{#          <option value="365">{% trans "Last year" %}</option>#}
+{#          <option value="other">{% trans "Other" %}</option>#}
+        </select>
+      </div>
+    </div>
+
+      <div class="form-group">
+      <label for="date_options" class="col-sm-2 control-label">{% trans "Period:" %}</label>
+      <div class="col-sm-10">
+        <select data-line-chart-command="select_box_change"
+                id="date_options" name="date_options" class="form-control">
+          <option value="1">{% trans "Last day" %}</option>
+          <option value="7" selected="selected">{% trans "Last week" %}</option>
+          <option value="{% now 'j' %}">{% trans "Month to date" %}</option>
+          <option value="15">{% trans "Last 15 days" %}</option>
+          <option value="30">{% trans "Last 30 days" %}</option>
+          <option value="365">{% trans "Last year" %}</option>
+          <option value="other">{% trans "Other" %}</option>
+        </select>
+      </div>
+    </div>
+
+
+    <div class="form-group" id="report_date_from">
+      <label for="date_from" class="control-label col-sm-2">{% trans "From:" %}</label>
+      <div class="col-sm-2">
+        <input data-line-chart-command="date_picker_change"
+               type="text" id="date_from" name="date_from" class="form-control example"/>
+      </div>
+    </div>
+    <div class="form-group" id="report_date_to">
+      <label for="date_to" class="control-label col-sm-2">{% trans "To:" %}</label>
+      <div class="col-sm-2">
+        <input data-line-chart-command="date_picker_change"
+               type="text" name="date_to" class="form-control example"/>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="col-sm-offset-2 col-sm-10">
+        <button type="submit" class="btn btn-default btn-sm">{% trans 'Generate Report' %}</button>
+      </div>
+    </div>
+
+    <table id="report_table" class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Machine ID</th>
+                <th>Event</th>
+                <th>State</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody id="report_table_body">
+        </tbody>
+    </table>
+
+  </form>
+</div>
+<script type="text/javascript">
+  var node_list = new Array();
+
+  $("#report_table").hide();
+
+  $("#machine_id_options").change(function(){
+      var node_uuid = $(this).children('option:selected').val();
+      var node = undefined;
+      $.each(node_list, function(key, value){
+          if(value.node_uuid == node_uuid) {
+              node = value;
+          }
+      });
+      if(node != undefined) {
+          var table_data_list = new Array();
+          $.each(node.data, function(key, value){
+              var event = value.name.substr(38, value.name.length - 1 - 37);
+              $.each(value.data, function(key, value){
+                  var state = value.y == 1 ? "Asserted" : "Deasserted";
+                  var date = value.x;
+                  var table_data = {
+                      machine_id: node.node_uuid,
+                      event: event,
+                      state: state,
+                      date: date
+                  }
+                  table_data_list.push(table_data);
+              });
+          });
+          table_data_list.sort(function(value1, value2){
+              return Date.parse(value1.date.replace('T', ' ')) - Date.parse(value2.date.replace('T', ' '));
+          });
+          $("#report_table").show();
+          $("#report_table tbody").empty();
+          $.each(table_data_list, function(key, value){
+              var table = document.getElementById("report_table_body");
+              var row = table.insertRow();
+              var c1 = row.insertCell(0);
+              c1.innerHTML = value.machine_id;
+              var c2 = row.insertCell(1);
+              c2.innerHTML = value.event;
+              var c3 = row.insertCell(2);
+              c3.innerHTML = value.state;
+              var c4 = row.insertCell(3);
+              c4.innerHTML = value.date;
+          });
+
+      }
+  });
+
+  $.ajax({
+      url: "samples?meter=hardware.ipmi.sel&group_by=&stats_attr=avg&date_options=7&date_from=&date_to=",
+      success: function (data) {
+          var series = data.series;
+          $.each(series, function(key, value){
+              var node_uuid = value.name.substr(0, 36);
+              var node = undefined;
+              $.each(node_list, function(key, value){
+                  if(value.node_uuid == node_uuid) {
+                      node = value;
+                  }
+              });
+              if(node == undefined) {
+                  node = {
+                      node_uuid: node_uuid,
+                      data:[value]
+                  };
+                  node_list.push(node);
+              } else {
+                  node.data.push(value);
+              }
+          });
+          $.each(node_list, function(key, value){
+              $("#machine_id_options").append("<option value=\""+ value.node_uuid +"\">" + value.node_uuid + "</option>");
+          });
+      }
+  }
+  );
+</script>
