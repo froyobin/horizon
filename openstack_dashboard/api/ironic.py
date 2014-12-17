@@ -19,7 +19,6 @@ from horizon.utils import functions as utils
 from horizon.utils.memoized import memoized  # noqa
 from openstack_dashboard.api import base
 from ironicclient import client as ironic_client
-
 LOG = logging.getLogger(__name__)
 # #
 # #
@@ -90,17 +89,30 @@ LOG = logging.getLogger(__name__)
 
 
 def get_node_names(request):
+
+    auth_url=base.url_for(request, 'identity'),
     kwargs = {
         'os_auth_token': request.user.token.id,
-        'ironic_url':'http://223.3.78.109:6385/',
+        'ironic_url':'http://223.3.73.169:6385/',
+        #'ironic_url':auth_url,
         # 'timeout': args.timeout,
         # 'ca_file': args.ca_file,
         # 'cert_file': args.cert_file,
         # 'key_file': args.key_file,
     }
     client = ironic_client.get_client(1,**kwargs)
-    LOG.warning(client.node.list())
-    LOG.warning("aaaaaaaaaaaaa")
-    return
+    return client.node.list()
 
-
+def get_node_info(request,uuid):
+    auth_url=base.url_for(request, 'identity'),
+    kwargs = {
+        'os_auth_token': request.user.token.id,
+        'ironic_url':'http://223.3.73.169:6385/',
+        #'ironic_url':auth_url,
+        # 'timeout': args.timeout,
+        # 'ca_file': args.ca_file,
+        # 'cert_file': args.cert_file,
+        # 'key_file': args.key_file,
+    }
+    client = ironic_client.get_client(1,**kwargs)
+    return client.node.get(uuid)

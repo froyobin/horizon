@@ -20,4 +20,6 @@ urlpatterns = patterns(
     url(r'^$', views.IndexView.as_view(), name='index'),
     url(r'^samples$', views.SamplesView.as_view(), name='samples'),
     url(r'^report$', views.ReportView.as_view(), name='report'),
-    url(r'^report/csv$', views.CsvReportView.as_view(), name='csvreport'))
+    url(r'^report/csv$', views.CsvReportView.as_view(), name='csvreport'),
+    url(r'^report/sel-csv$', views.SelCsvReportView.as_view(), name='selcsvreport'))
+

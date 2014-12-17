@@ -141,7 +141,33 @@ class CsvReportView(django.views.generic.View):
                             content_type='csv',
                             **response_kwargs)
         return resp
+##
+class SelCsvReportView(django.views.generic.View):
+    def post(self, request, **response_kwargs):
+        file_data = json.loads(request.POST.get('value', None))
+        render_class = SelReportCsvRender
+        response_kwargs.setdefault("filename", "sel-usage.csv")
+        context = {'file_data': file_data}
+        resp = render_class(request=request,
+                            template=None,
+                            context=context,
+                            content_type='csv',
+                            **response_kwargs)
+        return resp
 
+class SelReportCsvRender(csvbase.BaseCsvResponse):
+   
+    columns = [_("Machine ID"), _("Event"), _("State"),
+               _("Date")]
+    
+    def get_row_data(self):
+        
+        for line in self.context['file_data']:
+                yield (line["machine_id"],
+                       line["event"],
+                       line["state"],
+                       line["date"])
+##
 
 class ReportCsvRenderer(csvbase.BaseCsvResponse):
 
@@ -158,6 +184,7 @@ class ReportCsvRenderer(csvbase.BaseCsvResponse):
                        u["service"],
                        u["time"],
                        u["value"])
+
 
 
 def _calc_period(date_from, date_to):

@@ -1159,10 +1159,7 @@ class Meters(object):
                 'label': '',
                 'description': _("Fan speed of hardwares"),
             }),
-            ('hardware.ipmi.sel', {
-                'label': '',
-                'description': _("sel event"),
-            }),
+
             ('hardware.ipmi.temperature', {
                 'label': '',
                 'description': _("Temperature of sensors"),

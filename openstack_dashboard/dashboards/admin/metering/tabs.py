@@ -70,18 +70,19 @@ class hardwareevent(tabs.Tab):
     template_name = ("admin/metering/hardware_event.html")
 
     def get_context_data(self, request):
+        context = template.RequestContext(request)
         meters = ceilometer.Meters(request)
-        name=ironic.get_node_names(request)
+        nodes=ironic.get_node_names(request)
+        node_list={}
+	
+        for node in nodes:
+            driver_info=ironic.get_node_info(request,node.uuid).driver_info
+            driver_ip=driver_info['ipmi_address']
+
+            node_list[node.uuid] =  driver_ip
         if not meters._ceilometer_meter_list:
             msg = _("There are no meters defined yet.")
-
-
-
-        context = {
-            'nova_meters':"OK" ,
-            'neutron_meters': "FALSE",
-        }
-
+        context['node_list'] = node_list
         return context
 
 class CeilometerOverviewTabs(tabs.TabGroup):

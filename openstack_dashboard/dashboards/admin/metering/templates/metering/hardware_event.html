@@ -1,26 +1,45 @@
 {% load i18n %}
 <div id="ceilometer-report">
-  <form class="form-horizontal" action="{% url 'horizon:admin:metering:report' %}" method="POST">
+  <div class="form-horizontal" action="{% url 'horizon:admin:metering:report' %}" method="POST">
       {% csrf_token %}
     <div class="form-group">
       <label for="report_date_options" class="control-label col-sm-2">{% trans "Machine ID:" %}</label>
       <div class="col-sm-2">
         <select data-line-chart-command="select_box_change"
                 id="machine_id_options" name="date_options" class="form-control">
-{#          <option value="1">{{ nova_meters }}</option>#}
-{#          <option value="7" selected="selected">{% trans "Last week" %}</option>#}
-{#          <option value="{% now 'j' %}">{% trans "Month to date" %}</option>#}
-{#          <option value="15">{% trans "Last 15 days" %}</option>#}
-{#          <option value="30">{% trans "Last 30 days" %}</option>#}
-{#          <option value="365">{% trans "Last year" %}</option>#}
-{#          <option value="other">{% trans "Other" %}</option>#}
+        	{% if node_list %}           
+              		{% for uuid,ip in node_list.items %}
+                	<option title="The uuid of baremetal"  value="{{ uuid }}">
+                  	{{ ip }}
+                	</option>
+              {% endfor %}
+          {% endif %}
+	</select>
+      </div>
+    </div>
+    
+    
+    
+    <div class="form-group">
+      <label for="date_options" class="col-sm-2 control-label">{% trans "Filter:" %}</label>
+      <div class="col-sm-2">
+        <select data-line-chart-command="select_box_change"
+                id="filter_level" name="date_options" class="form-control">
+          <option value="os">{% trans "OS" %}</option>
+          <option value="fan" selected="selected">{% trans "Fan" %}</option>
+          <option value="temperature">{% trans "Temperature" %}</option>
+          <option value="other">{% trans "Other" %}</option>
         </select>
       </div>
     </div>
+    
+    
+    
+    
 
-      <div class="form-group">
+    <div class="form-group">
       <label for="date_options" class="col-sm-2 control-label">{% trans "Period:" %}</label>
-      <div class="col-sm-10">
+      <div class="col-sm-2">
         <select data-line-chart-command="select_box_change"
                 id="date_options" name="date_options" class="form-control">
           <option value="1">{% trans "Last day" %}</option>
@@ -38,23 +57,29 @@
     <div class="form-group" id="report_date_from">
       <label for="date_from" class="control-label col-sm-2">{% trans "From:" %}</label>
       <div class="col-sm-2">
-        <input data-line-chart-command="date_picker_change"
-               type="text" id="date_from" name="date_from" class="form-control example"/>
+        <input data-line-chart-command="date_picker_change" id="input_date_from"
+               type="text" name="date_from" class="form-control example"/>
       </div>
     </div>
-    <div class="form-group" id="report_date_to">
+    <div  class="form-group" id="report_date_to">
       <label for="date_to" class="control-label col-sm-2">{% trans "To:" %}</label>
       <div class="col-sm-2">
-        <input data-line-chart-command="date_picker_change"
+        <input data-line-chart-command="date_picker_change" id="input_date_to"
                type="text" name="date_to" class="form-control example"/>
       </div>
     </div>
 
     <div class="form-group">
       <div class="col-sm-offset-2 col-sm-10">
-        <button type="submit" class="btn btn-default btn-sm">{% trans 'Generate Report' %}</button>
+	<button id="btn-refresh" class="btn btn-default btn-sm">Refresh</button>
+        <button id="btn-generate-report" class="btn btn-default btn-sm">{% trans 'Generate Report' %}</button>
       </div>
     </div>
+
+
+<div id="please-spinner" class="spinner" style="position: relative; z-index: 100; left: 15px; top: 9px;" aria-role="progressbar"><div style="position: absolute; top: -1px; opacity: 0.25; animation: 1.25s linear 0s normal none infinite opacity-50-25-0-10;"><div style="position: absolute; width: 7px; height: 2px; background: none repeat scroll 0% 0% rgb(0, 0, 0); box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.1); transform-origin: left center 0px; transform: rotate(0deg) translate(3px, 0px); border-radius: 1px 1px 1px 1px;"></div></div><div style="position: absolute; top: -1px; opacity: 0.25; animation: 1.25s linear 0s normal none infinite opacity-50-25-1-10;"><div style="position: absolute; width: 7px; height: 2px; background: none repeat scroll 0% 0% rgb(0, 0, 0); box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.1); transform-origin: left center 0px; transform: rotate(36deg) translate(3px, 0px); border-radius: 1px 1px 1px 1px;"></div></div><div style="position: absolute; top: -1px; opacity: 0.25; animation: 1.25s linear 0s normal none infinite opacity-50-25-2-10;"><div style="position: absolute; width: 7px; height: 2px; background: none repeat scroll 0% 0% rgb(0, 0, 0); box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.1); transform-origin: left center 0px; transform: rotate(72deg) translate(3px, 0px); border-radius: 1px 1px 1px 1px;"></div></div><div style="position: absolute; top: -1px; opacity: 0.25; animation: 1.25s linear 0s normal none infinite opacity-50-25-3-10;"><div style="position: absolute; width: 7px; height: 2px; background: none repeat scroll 0% 0% rgb(0, 0, 0); box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.1); transform-origin: left center 0px; transform: rotate(108deg) translate(3px, 0px); border-radius: 1px 1px 1px 1px;"></div></div><div style="position: absolute; top: -1px; opacity: 0.25; animation: 1.25s linear 0s normal none infinite opacity-50-25-4-10;"><div style="position: absolute; width: 7px; height: 2px; background: none repeat scroll 0% 0% rgb(0, 0, 0); box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.1); transform-origin: left center 0px; transform: rotate(144deg) translate(3px, 0px); border-radius: 1px 1px 1px 1px;"></div></div><div style="position: absolute; top: -1px; opacity: 0.25; animation: 1.25s linear 0s normal none infinite opacity-50-25-5-10;"><div style="position: absolute; width: 7px; height: 2px; background: none repeat scroll 0% 0% rgb(0, 0, 0); box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.1); transform-origin: left center 0px; transform: rotate(180deg) translate(3px, 0px); border-radius: 1px 1px 1px 1px;"></div></div><div style="position: absolute; top: -1px; opacity: 0.25; animation: 1.25s linear 0s normal none infinite opacity-50-25-6-10;"><div style="position: absolute; width: 7px; height: 2px; background: none repeat scroll 0% 0% rgb(0, 0, 0); box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.1); transform-origin: left center 0px; transform: rotate(216deg) translate(3px, 0px); border-radius: 1px 1px 1px 1px;"></div></div><div style="position: absolute; top: -1px; opacity: 0.25; animation: 1.25s linear 0s normal none infinite opacity-50-25-7-10;"><div style="position: absolute; width: 7px; height: 2px; background: none repeat scroll 0% 0% rgb(0, 0, 0); box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.1); transform-origin: left center 0px; transform: rotate(252deg) translate(3px, 0px); border-radius: 1px 1px 1px 1px;"></div></div><div style="position: absolute; top: -1px; opacity: 0.25; animation: 1.25s linear 0s normal none infinite opacity-50-25-8-10;"><div style="position: absolute; width: 7px; height: 2px; background: none repeat scroll 0% 0% rgb(0, 0, 0); box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.1); transform-origin: left center 0px; transform: rotate(288deg) translate(3px, 0px); border-radius: 1px 1px 1px 1px;"></div></div><div style="position: absolute; top: -1px; opacity: 0.25; animation: 1.25s linear 0s normal none infinite opacity-50-25-9-10;"><div style="position: absolute; width: 7px; height: 2px; background: none repeat scroll 0% 0% rgb(0, 0, 0); box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.1); transform-origin: left center 0px; transform: rotate(324deg) translate(3px, 0px); border-radius: 1px 1px 1px 1px;"></div></div></div>
+
+
 
     <table id="report_table" class="table table-bordered table-striped">
         <thead>
@@ -68,14 +93,104 @@
         <tbody id="report_table_body">
         </tbody>
     </table>
-
-  </form>
+  </div>
 </div>
 <script type="text/javascript">
-  var node_list = new Array();
 
   $("#report_table").hide();
+  $("#please-spinner").hide();
+$("#report_date_from, #report_date_to").hide();
 
+  $("#btn-refresh").click(function(){
+	$("#btn-refresh").attr('disabled',"true");
+	var filter_level = $("#filter_level").val();
+	var input_date_from = $("#input_date_from").val();
+ 	var input_date_to = $("#input_date_to").val();
+ 	var date_option = $("#date_options").val();
+	var request_url = "samples?meter=hardware.ipmi.sel."+filter_level+"&group_by=&stats_attr=avg&date_options="+date_option+"&date_from=" + input_date_from + "&date_to=" + input_date_to;
+	var uuid = $('#machine_id_options option:selected').val();
+	
+	csv_data = undefined;
+	       
+	 horizon.modals.modal_spinner(gettext("Loading"));
+	
+	$.ajax({
+      		url: request_url,
+      		success: function (data) {
+			        horizon.modals._request = null;
+        horizon.modals.spinner.modal('hide');
+			 $("#btn-refresh").removeAttr("disabled");
+         		var series = data.series;
+			var data_list = new Array();
+          		$.each(series, function(key, value){
+              			var node_uuid = value.name.substr(0, 36);
+              			if(uuid == node_uuid) {
+	      				data_list.push(value);
+	 var table_data_list = new Array();
+          $.each(data_list, function(key, value){
+              var event = value.name.substr(38, value.name.length - 1 - 37);
+              $.each(value.data, function(key, value){
+                  var state = value.y == 1 ? "Asserted" : "Deasserted";
+                  var date = value.x;
+                  var table_data = {
+                      machine_id: uuid,
+                      event: event,
+                      state: state,
+                      date: date
+                  }
+                  table_data_list.push(table_data);
+              });
+          });
+          table_data_list.sort(function(value1, value2){
+              return Date.parse(value1.date.replace('T', ' ')) - Date.parse(value2.date.replace('T', ' '));
+          });
+	  csv_data = table_data_list.slice();
+          $("#report_table").show();
+          $("#report_table tbody").empty();
+          $.each(table_data_list, function(key, value){
+              var table = document.getElementById("report_table_body");
+              var row = table.insertRow();
+              var c1 = row.insertCell(0);
+              c1.innerHTML = value.machine_id;
+              var c2 = row.insertCell(1);
+              c2.innerHTML = value.event;
+              var c3 = row.insertCell(2);
+              c3.innerHTML = value.state;
+              var c4 = row.insertCell(3);
+              c4.innerHTML = value.date;
+          });
+
+	      			}
+          		});
+      		}
+ 	});
+	  });
+
+function post(URL, PARAMS) {        
+    var temp = document.createElement("form");        
+    temp.innerHTML = "{% csrf_token %}";
+    temp.action = URL;        
+    temp.method = "post";        
+    temp.style.display = "none";        
+    for (var x in PARAMS) {        
+        var opt = document.createElement("textarea");        
+        opt.name = x;        
+        opt.value = PARAMS[x];        
+        // alert(opt.name)        
+        temp.appendChild(opt);        
+    }        
+    document.body.appendChild(temp);        
+    temp.submit();        
+    return temp;        
+}        
+
+$("#btn-generate-report").click(function(){
+	var post_data = JSON.stringify(csv_data);
+	post("report/sel-csv", {value: post_data});
+});
+
+//  var node_list = new Array();
+/*
   $("#machine_id_options").change(function(){
       var node_uuid = $(this).children('option:selected').val();
       var node = undefined;
@@ -113,40 +228,23 @@
               var c2 = row.insertCell(1);
               c2.innerHTML = value.event;
               var c3 = row.insertCell(2);
-              c3.innerHTML = value.state;
+              c3.innerHTML = value.state;('option:selected').val();
               var c4 = row.insertCell(3);
               c4.innerHTML = value.date;
           });
 
       }
   });
+*/
 
-  $.ajax({
-      url: "samples?meter=hardware.ipmi.sel&group_by=&stats_attr=avg&date_options=7&date_from=&date_to=",
-      success: function (data) {
-          var series = data.series;
-          $.each(series, function(key, value){
-              var node_uuid = value.name.substr(0, 36);
-              var node = undefined;
-              $.each(node_list, function(key, value){
-                  if(value.node_uuid == node_uuid) {
-                      node = value;
-                  }
-              });
-              if(node == undefined) {
-                  node = {
-                      node_uuid: node_uuid,
-                      data:[value]
-                  };
-                  node_list.push(node);
-              } else {
-                  node.data.push(value);
-              }
-          });
-          $.each(node_list, function(key, value){
-              $("#machine_id_options").append("<option value=\""+ value.node_uuid +"\">" + value.node_uuid + "</option>");
-          });
-      }
-  }
-  );
+  $("#date_options").change(function(evt) {
+        if ($(this).find("option:selected").val() == "other"){
+          evt.stopPropagation();
+          $("#report_date_from input, #report_date_to input").val('');
+          $("#report_date_from, #report_date_to").show();
+        } else {
+          $("#report_date_from, #report_date_to").hide();
+        }
+    });
+
 </script>
