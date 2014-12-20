@@ -103,7 +103,7 @@ def get_node_names(request):
     client = ironic_client.get_client(1,**kwargs)
     return client.node.list()
 
-def get_node_info(request,uuid):
+def get_node_info(request, uuid):
     auth_url=base.url_for(request, 'identity'),
     kwargs = {
         'os_auth_token': request.user.token.id,
@@ -116,3 +116,27 @@ def get_node_info(request,uuid):
     }
     client = ironic_client.get_client(1,**kwargs)
     return client.node.get(uuid)
+
+def add_node_info(request, ip, username, password):
+    kwargs = {
+        'os_auth_token': request.user.token.id,
+        'ironic_url': 'http://223.3.73.169:6385/',
+    }
+    client = ironic_client.get_client(1, **kwargs)
+    create_args = {
+        'driver': 'ipmi_driver',
+        'driver_info': {
+            'ipmi_address': ip,
+            'ipmi_username': username,
+            'ipmi_password': password
+        }
+    }
+    return client.node.create(**create_args)
+
+def delete_node(request, uuid):
+    kwargs = {
+        'os_auth_token': request.user.token.id,
+        'ironic_url': 'http://223.3.73.169:6385/',
+    }
+    client = ironic_client.get_client(1, **kwargs)
+    return client.node.delete(uuid)

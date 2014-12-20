@@ -28,6 +28,7 @@
           <option value="os">{% trans "OS" %}</option>
           <option value="fan" selected="selected">{% trans "Fan" %}</option>
           <option value="temperature">{% trans "Temperature" %}</option>
+            <option value="hw">{% trans "Hardware" %}</option>
           <option value="other">{% trans "Other" %}</option>
         </select>
       </div>
@@ -69,6 +70,21 @@
       </div>
     </div>
 
+
+    <div class="form-group">
+      <label for="date_options" class="col-sm-2 control-label">{% trans "Limit:" %}</label>
+      <div class="col-sm-2">
+        <select data-line-chart-command="select_box_change"
+                id="limit"  class="form-control">
+          <option value="10">{% trans "10" %}</option>
+          <option value="50" selected="selected">{% trans "50" %}</option>
+          <option value="100">{% trans "100" %}</option>
+        </select>
+      </div>
+    </div>
+
+
+
     <div class="form-group">
       <div class="col-sm-offset-2 col-sm-10">
 	<button id="btn-refresh" class="btn btn-default btn-sm">Refresh</button>
@@ -107,9 +123,13 @@ $("#report_date_from, #report_date_to").hide();
 	var input_date_from = $("#input_date_from").val();
  	var input_date_to = $("#input_date_to").val();
  	var date_option = $("#date_options").val();
-	var request_url = "samples?meter=hardware.ipmi.sel."+filter_level+"&group_by=&stats_attr=avg&date_options="+date_option+"&date_from=" + input_date_from + "&date_to=" + input_date_to;
-	var uuid = $('#machine_id_options option:selected').val();
-	
+    var limit = $('#limit').val();
+    var uuid = $('#machine_id_options option:selected').val();
+	var request_url = "samples?meter=hardware.ipmi.sel."+filter_level+"&group_by=&stats_attr=avg&date_options="+date_option+"&date_from=" + input_date_from + "&date_to=" + input_date_to + "&limit=" + limit + "&machine_uuid="+uuid;
+
+
+
+
 	csv_data = undefined;
 	       
 	 horizon.modals.modal_spinner(gettext("Loading"));

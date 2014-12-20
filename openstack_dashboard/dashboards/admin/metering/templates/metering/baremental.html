@@ -1,0 +1,89 @@
+{% load i18n %}
+{% if node_list %}
+<table id="node_info_table" class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>Machine ID</th>
+            <th>BMC IP Address</th>
+            <th>Username</th>
+            <th>Operation</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for item in node_list %}
+        <tr>
+            <th>{{ item.node_uuid }}</th>
+            <th>{{ item.node_ip }}</th>
+            <th>{{ item.node_username }}</th>
+            <th>
+                <button class="btn btn-default btn-sm" onclick="update_bminfo('{{ item.node_uuid }}', '{{ item.node_ip }}', '{{ item.node_username }}');">Update</button>
+                <button  class="btn btn-default btn-sm" onclick="delete_bminfo('{{ item.node_uuid }}');">Delete</button>
+            </th>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+<button class="btn btn-default btn-sm" id="btn-add-machine">Add Machine</button>
+<div id="form-area">
+    <h3>Add Machine</h3>
+    <form id="baremental-form" class="form-horizontal" method="POST">
+         {% csrf_token %}
+        <input type="hidden" name="uuid" id="uuid"">
+        <div class="form-group">
+            <label for="date_from" class="control-label col-sm-2">BMC IP</label>
+            <div class="col-sm-2">
+                <input id="bmc-ip" type="text" name="bmc-ip" class="form-control example"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="date_from" class="control-label col-sm-2">Username</label>
+            <div class="col-sm-2">
+                <input id="username" type="text" name="username" class="form-control example"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="date_from" class="control-label col-sm-2">Password</label>
+            <div class="col-sm-2">
+                <input id="password" type="text" name="password" class="form-control example"/>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <button id="btn-submit" class="btn btn-default btn-sm">I am sure</button>
+        </div>
+    </form>
+</div>
+<script language="javascript">
+    $("#form-area").hide();
+    $("#btn-add-machine").click(function(){
+        $("#baremental-form .example").val();
+        $("#baremental-form h3").val("Add Machine");
+        $("#baremental-form").attr("action", "baremental/add");
+        $("#form-area").show();
+    });
+
+    function update_bminfo(uuid, ip, username) {
+        $("#bmc-ip").val(ip);
+        $("#username").val(username);
+        $("#password").val();
+        $("#baremental-form h3").val("Update Machine");
+        $("#baremental-form").attr("action", "baremental/update");
+        $("#baremental-form #uuid").val(uuid);
+        $("#form-area").show();
+    }
+
+    function delete_bminfo(uuid) {
+        $("#baremental-form .example").val();
+        $("#baremental-form").attr("action", "baremental/delete");
+        $("#baremental-form #uuid").val(uuid);
+        $("#baremental-form ").submit();
+    }
+    $("#btn-submit").click(function(){
+        var toSubmit = true;
+        $("#baremental-form .example").each(function(){
+            if($(this).val() == "" | $(this).val() == undefined) toSubmit = false;
+        });
+        if(toSubmit)
+            $("#baremental-form ").submit();
+    });
+</script>

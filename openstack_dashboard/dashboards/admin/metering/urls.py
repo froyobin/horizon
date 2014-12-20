@@ -21,5 +21,6 @@ urlpatterns = patterns(
     url(r'^samples$', views.SamplesView.as_view(), name='samples'),
     url(r'^report$', views.ReportView.as_view(), name='report'),
     url(r'^report/csv$', views.CsvReportView.as_view(), name='csvreport'),
-    url(r'^report/sel-csv$', views.SelCsvReportView.as_view(), name='selcsvreport'))
+    url(r'^report/sel-csv$', views.SelCsvReportView.as_view(), name='selcsvreport'),
+    url(r'^baremental/(?P<op_method>(add|update|delete))$', views.BarementalView.as_view(), name='baremental'))
 

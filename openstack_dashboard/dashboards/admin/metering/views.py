@@ -17,6 +17,7 @@ import json
 
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse   # noqa
+from django.http import HttpResponseRedirect
 from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext_lazy as _
 import django.views
@@ -28,6 +29,7 @@ from horizon.utils import csvbase
 
 from openstack_dashboard import api
 from openstack_dashboard.api import ceilometer
+from openstack_dashboard.api import ironic
 
 from openstack_dashboard.dashboards.admin.metering import tables as \
     metering_tables
@@ -38,6 +40,28 @@ from openstack_dashboard.dashboards.admin.metering import tabs as \
 class IndexView(tabs.TabbedTableView):
     tab_group_class = metering_tabs.CeilometerOverviewTabs
     template_name = 'admin/metering/index.html'
+
+class BarementalView(django.views.generic.View):
+    def post(self, request, **response_kwargs):
+        method = response_kwargs["op_method"]
+        if method == "add":
+            ip = request.POST.get("bmc-ip", None)
+            username = request.POST.get("username", None)
+            password = request.POST.get("password", None)
+            meters = ceilometer.Meters(request)
+            if not meters._ceilometer_meter_list:
+                msg = _("There are no meters defined yet.")
+
+            result = ironic.add_node_info(request, ip, username, password)
+
+        elif method == "update":
+            None
+        else:
+            uuid = request.POST.get("uuid")
+            result = ironic.delete_node(request, uuid)
+
+        return HttpResponseRedirect("/admin/metering")
+
 
 
 class SamplesView(django.views.generic.TemplateView):
@@ -51,19 +75,29 @@ class SamplesView(django.views.generic.TemplateView):
                           unit):
         """Construct datapoint series for a meter from resource aggregates."""
         series = []
-        for resource in aggregates:
-            if resource.get_meter(meter_name):
-                point = {'unit': unit,
-                         'name': getattr(resource, resource_name),
+        tmpdic={}
+        for sample in aggregates:
+            if sample.resource_id:
+                resource_id = sample.resource_id
+                try:
+                    point = tmpdic[resource_id]
+                except KeyError:
+                    point = {'unit': unit,
+                         'name': sample.resource_id,
                          'data': []}
-                for statistic in resource.get_meter(meter_name):
-                    date = statistic.duration_end[:19]
-                    value = float(getattr(statistic, stats_name))
-                    point['data'].append({'x': date, 'y': value})
-                series.append(point)
-        return series
+                    tmpdic[resource_id]=point
+                date = sample.timestamp.split('.')[0]
+
+                value = sample.counter_volume
+
+                point['data'].append({'x': date, 'y': value})
+
+        for value in tmpdic.values():
+            value['data'].sort(key=lambda item: item['x'])
+        return tmpdic.values()
 
     def get(self, request, *args, **kwargs):
+
         meter = request.GET.get('meter', None)
         if not meter:
             return HttpResponse(json.dumps({}),
@@ -75,15 +109,23 @@ class SamplesView(django.views.generic.TemplateView):
         date_to = request.GET.get('date_to', None)
         stats_attr = request.GET.get('stats_attr', 'avg')
         group_by = request.GET.get('group_by', None)
+        limit = request.GET.get('limit', None)
+        uuid = request.GET.get('machine_uuid',None)
 
-        resources, unit = query_data(request,
+        # resources, unit = query_data(request,
+        #                              date_from,
+        #                              date_to,
+        #                              date_options,
+        #                              group_by,
+        #                              meter)
+        samples, unit = query_data_by_sample(request,
                                      date_from,
                                      date_to,
                                      date_options,
                                      group_by,
-                                     meter)
+                                     meter,limit,uuid)
         resource_name = 'id' if group_by == "project" else 'resource_id'
-        series = self._series_for_meter(resources,
+        series = self._series_for_meter(samples,
                                         resource_name,
                                         meter_name,
                                         stats_attr,
@@ -245,6 +287,99 @@ def _calc_date_args(date_from, date_to, date_options):
             raise ValueError("The time delta must be an "
                              "integer representing days.")
     return date_from, date_to
+
+
+def query_data_by_sample(request,
+               date_from,
+               date_to,
+               date_options,
+               group_by,
+               meter,
+               limit,
+               uuid,
+               period=None,
+               additional_query=None):
+    date_from, date_to = _calc_date_args(date_from,
+                                         date_to,
+                                         date_options)
+    unit=""
+    if not period:
+        period = _calc_period(date_from, date_to)
+    if additional_query is None:
+        additional_query = []
+    if date_from:
+        additional_query += [{'field': 'timestamp',
+                              'op': 'ge',
+                              'value': date_from}]
+    if date_to:
+        additional_query += [{'field': 'timestamp',
+                              'op': 'le',
+                              'value': date_to}]
+    additional_query += [{'field': 'resource_id',
+                          'op': 'like',
+                          'value': uuid}]
+
+    # TODO(lsmola) replace this by logic implemented in I1 in bugs
+    # 1226479 and 1226482, this is just a quick fix for RC1
+
+    if group_by == "project":
+        try:
+            tenants, more = api.keystone.tenant_list(
+                request,
+                domain=None,
+                paginate=False)
+        except Exception:
+            tenants = []
+            exceptions.handle(request,
+                              _('Unable to retrieve project list.'))
+        queries = {}
+        for tenant in tenants:
+            tenant_query = [{
+                            "field": "project_id",
+                            "op": "eq",
+                            "value": tenant.id}]
+
+            queries[tenant.name] = tenant_query
+
+        ceilometer_usage = ceilometer.CeilometerUsage(request)
+        resources = ceilometer_usage.resource_aggregates_with_statistics(
+            queries, [meter], period=period, stats_attr=None,
+            additional_query=additional_query)
+
+    else:
+        query = additional_query
+        def filter_by_meter_name(resource):
+            """Function for filtering of the list of resources.
+
+            Will pick the right resources according to currently selected
+            meter.
+            """
+            for link in resource.links:
+                if link['rel'] == meter:
+                    # If resource has the currently chosen meter.
+                    return True
+            return False
+
+        try:
+            ceilometer_usage = ceilometer.sample_list(request,meter,query,limits=limit)
+
+            if not ceilometer_usage :
+                unit=""
+            else:
+                unit = ceilometer_usage[0].counter_unit
+
+
+            # resources = ceilometer_usage.resources_with_statistics(
+            #     query, [meter], period=period, stats_attr=None,
+            #     additional_query=additional_query,
+            #     filter_func=filter_by_meter_name)
+        except Exception:
+            resources = []
+            unit=""
+            exceptions.handle(request,
+                              _('Unable to retrieve statistics.'))
+    return ceilometer_usage, unit
+
 
 
 def query_data(request,

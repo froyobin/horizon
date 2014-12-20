@@ -40,7 +40,15 @@ class GlobalStatsTab(tabs.Tab):
         meters = ceilometer.Meters(request)
         if not meters._ceilometer_meter_list:
             msg = _("There are no meters defined yet.")
-            messages.warning(request, msg)
+
+
+        nodes = ironic.get_node_names(request)
+        node_list = []
+
+        for node in nodes:
+            node_info = ironic.get_node_info(request,node.uuid).driver_info
+            node_ip = node_info['ipmi_address']
+            node_list.append({'node_uuid': node.uuid, 'node_ip': node_ip})
 
         context = {
             'nova_meters': meters.list_nova(),
@@ -50,6 +58,7 @@ class GlobalStatsTab(tabs.Tab):
             'swift_meters': meters.list_swift(),
             'kwapi_meters': meters.list_kwapi(),
             'ironic_meters': meters.list_ironic(),
+            'node_list': node_list
         }
 
         return context
@@ -85,7 +94,32 @@ class hardwareevent(tabs.Tab):
         context['node_list'] = node_list
         return context
 
+class BarementalTab(tabs.Tab):
+    name = _("Baremental Tab")
+    slug = "baremental_tab"
+    template_name = ("admin/metering/baremental.html")
+
+    def get_context_data(self, request):
+        context = template.RequestContext(request)
+        meters = ceilometer.Meters(request)
+        if not meters._ceilometer_meter_list:
+            msg = _("There are no meters defined yet.")
+            messages.warning(request, msg)
+
+        nodes = ironic.get_node_names(request)
+        node_list = []
+
+        for node in nodes:
+            node_info = ironic.get_node_info(request,node.uuid).driver_info
+            node_ip = node_info['ipmi_address']
+            node_username = node_info['ipmi_username']
+
+            node_list.append({'node_uuid': node.uuid, 'node_ip': node_ip, 'node_username': node_username})
+        context['node_list'] = node_list
+        return context
+
 class CeilometerOverviewTabs(tabs.TabGroup):
     slug = "ceilometer_overview"
-    tabs = (DailyReportTab, GlobalStatsTab, hardwareevent,)
+    tabs = (BarementalTab, DailyReportTab, GlobalStatsTab, hardwareevent)
     sticky = True
+
